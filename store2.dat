@@ -1,0 +1,10 @@
+; lines starting with ; or # are comments
+; first non-comment line is knapsack weight/size
+26
+; following lines specify list of objects with properties
+; item   price/value  weight/size
+item1  24. 12.
+item2  13. 7.
+item3  23. 11.
+item4  15. 8.
+item5  16. 9.

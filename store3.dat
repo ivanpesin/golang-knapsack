@@ -1,0 +1,15 @@
+; lines starting with ; or # are comments
+; first non-comment line is knapsack weight/size
+50
+; following lines specify list of objects with properties
+; item   price/value  weight/size
+item1 70 31
+item2 20 10
+item3 39 20
+item4 37 19
+item5  7 4
+item6  5 3
+item7 10 6
+; this input is https://people.sc.fsu.edu/~jburkardt/datasets/knapsack_01/knapsack_01.html
+; optimal value = 107
+; value based greedy alg works

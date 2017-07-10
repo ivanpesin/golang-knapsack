@@ -1,0 +1,23 @@
+; lines starting with ; or # are comments
+; first non-comment line is knapsack weight/size
+750
+; following lines specify list of objects with properties
+; item   price/value  weight/size
+item1    135 70
+item2  139 73
+item3  149 77
+item4  150 80
+item5  156 82
+item6  163 87
+item7  173 90
+item8  184 94 
+item9  192 98
+item10 201 106
+item11 210 110
+item12 214 113
+item13 221 115
+item14 229 118
+item15 240 120
+; this input is https://people.sc.fsu.edu/~jburkardt/datasets/knapsack_01/knapsack_01.html
+; optimal value = 1458
+; no greedy alg gets optimal solution

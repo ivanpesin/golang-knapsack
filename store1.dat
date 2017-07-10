@@ -1,0 +1,13 @@
+; lines starting with ; or # are comments
+; first non-comment line is knapsack weight/size
+20.0
+; following lines specify list of objects with properties
+; item   price/value  weight/size
+clock    175.00  10.00
+painting  90.00   9.00
+radio     20.00   4.00
+vase      50.00   2.00
+book      10.00   1.00
+computer 200.00  20.00
+; this input is from MIT IntoCS, optimal value 275
+; no greedy alg gets optimal solution

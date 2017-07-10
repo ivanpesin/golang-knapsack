@@ -1,9 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"math"
+	"os"
+	"path"
 	"sort"
+	"strconv"
+	"strings"
 )
 
 type item struct {
@@ -12,21 +17,14 @@ type item struct {
 	weight float64
 }
 
-const knapsackSize = 20
-
-var store = []item{
-	{name: "clock", value: 175, weight: 10},
-	{name: "painting", value: 90, weight: 9},
-	{name: "radio", value: 20, weight: 4},
-	{name: "vase", value: 50, weight: 2},
-	{name: "book", value: 10, weight: 1},
-	{name: "computer", value: 200, weight: 20},
-}
+var knapsackCapacity = -1.
+var store = []item{}
 
 func (i item) String() string {
-	return fmt.Sprintf("<%10s| $%6.2f, %6.2f kg>", i.name, i.value, i.weight)
+	return fmt.Sprintf(" %-10s $%10.2f %10.2f kg", i.name, i.value, i.weight)
 }
 
+// greedy implements greedy knapsack alg
 func greedy(items []item, maxWeight float64, metric func(i, j int) bool) (r []item) {
 
 	sort.Slice(items, metric)
@@ -44,6 +42,8 @@ func greedy(items []item, maxWeight float64, metric func(i, j int) bool) (r []it
 
 }
 
+// combinations returns all possible combinations of items in store.
+// Possible combinations are sent to a channel to avoid large memory consumption
 func combinations(items []item, ch chan []item) {
 	defer close(ch)
 
@@ -60,6 +60,7 @@ func combinations(items []item, ch chan []item) {
 	}
 }
 
+// getSackWeight returns weight of a given set of items
 func getSackWeight(set []item) (r float64) {
 	for _, i := range set {
 		r += i.weight
@@ -67,6 +68,7 @@ func getSackWeight(set []item) (r float64) {
 	return
 }
 
+// getSackValue returns value of a given set
 func getSackValue(set []item) (r float64) {
 	for _, i := range set {
 		r += i.value
@@ -74,6 +76,8 @@ func getSackValue(set []item) (r float64) {
 	return
 }
 
+// bestSolution looks through all possible combinations of items
+// and selects the one with highest value which is below or eq target weight
 func bestSolution(items []item, maxWeight float64) (float64, []item) {
 	bestVal := 0.
 	bestSack := []item{}
@@ -93,7 +97,72 @@ func bestSolution(items []item, maxWeight float64) (float64, []item) {
 	return bestVal, bestSack
 }
 
+// readStore reads items and their properties from a file
+func readStore(fn string) {
+	f, err := os.Open(fn)
+	if err != nil {
+		fmt.Printf("ERROR: Unable to open file: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("Reading store from file: %s\n", fn)
+	defer f.Close()
+	store = []item{}
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+		l := strings.TrimSpace(s.Text())
+		if len(l) > 0 && (l[0] == ';' || l[0] == '#') {
+			continue
+		}
+		fields := strings.Fields(l)
+		if knapsackCapacity == -1 && len(fields) == 1 {
+			val, err := strconv.ParseFloat(fields[0], 64)
+			if err != nil {
+				fmt.Printf("ERROR: Unable to parse value in:\n>>>   %v\n", l)
+				continue
+			}
+			knapsackCapacity = val
+			continue
+		}
+		if len(fields) != 3 {
+			fmt.Printf("ERROR: Invalid number of fields, must be 3:\n>>>   %v\n", l)
+			continue
+		}
+		val, err := strconv.ParseFloat(fields[1], 64)
+		if err != nil {
+			fmt.Printf("ERROR: Unable to parse value in:\n>>>   %v\n", l)
+			continue
+		}
+		weight, err := strconv.ParseFloat(fields[2], 64)
+		if err != nil {
+			fmt.Printf("ERROR: Unable to parse weight in:\n>>>   %v\n", l)
+			continue
+		}
+
+		//fmt.Printf("D: Appending: %s %f %f\n", fields[0], val, weight)
+		store = append(store, item{fields[0], val, weight})
+	}
+
+	// check we got knapsack capacity from input file
+	if knapsackCapacity < 0 {
+		fmt.Printf("ERROR: Knapsack capacity unspecified, probably misformed input file\n")
+		os.Exit(1)
+	}
+
+	// check we have at least 1 item in store
+	if len(store) < 1 {
+		fmt.Printf("ERROR: Empty store, probably misformed input file\n")
+		os.Exit(1)
+	}
+
+}
+
 func main() {
+
+	if len(os.Args) != 2 {
+		fmt.Printf("Usage: %s <input_file>\n", path.Base(os.Args[0]))
+		os.Exit(0)
+	}
+	readStore(os.Args[1])
 
 	fmt.Println("List of goods in store: ")
 	for _, v := range store {
@@ -105,9 +174,9 @@ func main() {
 
 	funcs := make([]func(i, j int) bool, 3)
 	funcs[0] = func(i, j int) bool { return items[i].value > items[j].value }
-	funcs[1] = func(i, j int) bool { return store[i].weight < store[j].weight }
+	funcs[1] = func(i, j int) bool { return items[i].weight < items[j].weight }
 	funcs[2] = func(i, j int) bool {
-		return store[i].value/store[i].weight > store[j].value/store[j].weight
+		return items[i].value/items[i].weight > items[j].value/items[j].weight
 	}
 
 	funcNames := make([]string, 3)
@@ -118,19 +187,19 @@ func main() {
 	for n, fname := range funcNames {
 		v := 0.
 		fmt.Printf("Being greedy based on %s: \n", fname)
-		for _, i := range greedy(items, knapsackSize, funcs[n]) {
+		for _, i := range greedy(items, knapsackCapacity, funcs[n]) {
 			fmt.Println("   ", i)
 			v += i.value
 		}
-		fmt.Printf("Total value: $%.2f\n", v)
+		fmt.Printf("--- Total value: $%.2f\n", v)
 	}
 
 	sort.Slice(items, func(i, j int) bool { return items[i].name < items[j].name })
-	fmt.Printf("Optimal solution:\n")
-	v, sack := bestSolution(items, knapsackSize)
+	fmt.Printf("\nOptimal solution:\n")
+	v, sack := bestSolution(items, knapsackCapacity)
 	for _, i := range sack {
 		fmt.Println("   ", i)
 	}
-	fmt.Printf("Total value: $%.2f\n", v)
+	fmt.Printf("--- Total value: $%.2f\n", v)
 
 }
