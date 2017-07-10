@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"sort"
 )
 
@@ -43,8 +44,52 @@ func greedy(items []item, maxWeight float64, metric func(i, j int) bool) (r []it
 
 }
 
-func combinations(items []item) {
-	sort.Slice(items, func(i, j int) bool { return items[i].name < items[i].name })
+func combinations(items []item) [][]item {
+	sort.Slice(items, func(i, j int) bool { return items[i].name < items[j].name })
+
+	p := int(math.Pow(2., float64(len(items))))
+
+	r := make([][]item, p)
+
+	for i := 0; i < p; i++ {
+		r[i] = []item{}
+		for j := 0; j < len(items); j++ {
+			if (i>>uint(j))&1 == 1 {
+				r[i] = append(r[i], items[j])
+			}
+		}
+	}
+
+	return r
+}
+
+func getSackWeight(set []item) (r float64) {
+	for _, i := range set {
+		r += i.weight
+	}
+	return
+}
+
+func getSackValue(set []item) (r float64) {
+	for _, i := range set {
+		r += i.value
+	}
+	return
+}
+
+func bestSolution(set [][]item, maxWeight float64) (float64, []item) {
+	bestVal := 0.
+	bestSack := []item{}
+	for _, sack := range set {
+		if getSackWeight(sack) <= maxWeight {
+			v := getSackValue(sack)
+			if v > bestVal {
+				bestVal = v
+				bestSack = sack
+			}
+		}
+	}
+	return bestVal, bestSack
 }
 
 func main() {
@@ -78,5 +123,12 @@ func main() {
 		}
 		fmt.Printf("Total value: $%.2f\n", v)
 	}
+
+	fmt.Printf("Optimal solution:\n")
+	v, sack := bestSolution(combinations(items), knapsackSize)
+	for _, i := range sack {
+		fmt.Println("   ", i)
+	}
+	fmt.Printf("Total value: $%.2f\n", v)
 
 }
